@@ -62,7 +62,7 @@ public:
 
     std::pair<T1, T2> operator*();
 
-    void operator++();
+    InOrderIterator operator++();
 
     bool operator==(const InOrderIterator& other);
 
@@ -124,15 +124,16 @@ typename AVLTree_MultiMap<T1, T2>::Node* AVLTree_MultiMap<T1, T2>::insert(AVLTre
 
     // Find uneven nodes along the path of the inserted element and fix them
     if(balance_factor(node) > 1) {
-        if (element.first <= node->left->values.first)
+        if(get_height(node->left) > get_height(node->right)) {
             node = right_rotate(node);
+        }
         else {
             node->left = left_rotate(node->left);
             node = right_rotate(node);
         }
     }
     if(balance_factor(node) < -1) {
-        if (element.first > node->right->values.first)
+        if (get_height(node->left) < get_height(node->right))
             node = left_rotate(node);
         else {
             node->right = right_rotate(node->right);
@@ -240,16 +241,16 @@ std::pair<T1, T2> AVLTree_MultiMap<T1, T2>::InOrderIterator::operator*() {
 }
 
 template <typename T1, typename T2>
-void AVLTree_MultiMap<T1, T2>::InOrderIterator::operator++() {
+typename AVLTree_MultiMap<T1, T2>::InOrderIterator AVLTree_MultiMap<T1, T2>::InOrderIterator::operator++() {
     // Logic for inorder next operation considering we are at node and want next element
     // (1) If node has a right child, then the next element will be the leftmost child of his right child (or the right child itself)
     // (2) If node has no right child, we go up until the node you came from is his parent's left child. If we get to nullptr before that, then there's no next
     // (3) If he is his parent's left child, the parent is the next element.
     // (4) Restart loop
 
-    // It should not be possible for node to be null, this if is here just for redundancy
+    // If the iterator does not point to a valid node, just return itself
     if(not node)
-        return;
+        return *this;
 
     // (1)
     auto current = node;
@@ -259,20 +260,21 @@ void AVLTree_MultiMap<T1, T2>::InOrderIterator::operator++() {
             current = current->left;
         }
         node = current;
-        return;
+        return *this;
     }
 
     // (2) and (3)
     while(current->parent) {
         if(current == current->parent->left){
             node = current->parent;
-            return;
+            return *this;
         }
         current = current->parent;
     }
 
     // If there is no next element
     node = nullptr;
+    return *this;
 }
 
 template <typename T1, typename T2>
