@@ -7,12 +7,10 @@
 
 template <typename T1, typename T2>
 class AVLTree_MultiMap {
-private:
-    struct Node;
-
-    class InOrderIterator;
 
 public:
+    class InOrderIterator;
+
     AVLTree_MultiMap();
 
     ~AVLTree_MultiMap();
@@ -26,22 +24,24 @@ public:
     InOrderIterator upper_bound(T1);
 
 private:
+    struct Node;
+
     long _size = 0;
 
     Node* _root = nullptr;
 
     // Node related methods
-    Node* insert(Node*, std::pair<T1, T2>);
+    Node* _insert(Node*, std::pair<T1, T2>);
 
-    static int get_height(const Node*);  // Returns 0 if nullptr
+    static int _get_height(const Node*);  // Returns 0 if nullptr
 
-    static int balance_factor(const Node*);
+    static int _balance_factor(const Node*);
 
-    static Node* right_rotate(Node*);
+    static Node* _right_rotate(Node*);
 
-    static Node* left_rotate(Node*);
+    static Node* _left_rotate(Node*);
 
-    void erase(Node*);
+    void _erase(Node*);
 
 };
 
@@ -79,9 +79,18 @@ AVLTree_MultiMap<T1, T2>::AVLTree_MultiMap() = default;
 
 template<typename T1, typename T2>
 AVLTree_MultiMap<T1, T2>::~AVLTree_MultiMap() {
-    erase(_root);
+    _erase(_root);
     _root = nullptr;
     _size = 0;
+}
+
+template <typename T1, typename T2>
+void AVLTree_MultiMap<T1, T2>::_erase(AVLTree_MultiMap::Node* node) {
+    if(not node)
+        return;
+    _erase(node->left);
+    _erase(node->right);
+    delete(node);
 }
 
 template <typename T1, typename T2>
@@ -90,54 +99,45 @@ long AVLTree_MultiMap<T1, T2>::size() {
 }
 
 template <typename T1, typename T2>
-void AVLTree_MultiMap<T1, T2>::erase(AVLTree_MultiMap::Node* node) {
-    if(not node)
-        return;
-    erase(node->left);
-    erase(node->right);
-    delete(node);
-}
-
-template <typename T1, typename T2>
 void AVLTree_MultiMap<T1, T2>::insert(std::pair<T1, T2> element) {
-    _root = insert(_root, element);
+    _root = _insert(_root, element);
     _size ++;
 }
 
 template <typename T1, typename T2>
-typename AVLTree_MultiMap<T1, T2>::Node* AVLTree_MultiMap<T1, T2>::insert(AVLTree_MultiMap::Node* node, std::pair<T1, T2> element) {
+typename AVLTree_MultiMap<T1, T2>::Node* AVLTree_MultiMap<T1, T2>::_insert(AVLTree_MultiMap::Node* node, std::pair<T1, T2> element) {
     // First we insert the new element normally
     if(not node)
         return new Node{nullptr, nullptr, nullptr, element, 1};
 
     if(element.first <= node->values.first) {
-        node->left = insert(node->left, element);
+        node->left = _insert(node->left, element);
         node->left->parent = node;
     }
     else {
-        node->right = insert(node->right, element);
+        node->right = _insert(node->right, element);
         node->right->parent = node;
     }
 
     // Update the height of the current node
-    node->height = 1 + std::max(get_height(node->left), get_height(node->right));
+    node->height = 1 + std::max(_get_height(node->left), _get_height(node->right));
 
     // Find uneven nodes along the path of the inserted element and fix them
-    if(balance_factor(node) > 1) {
-        if(get_height(node->left) > get_height(node->right)) {
-            node = right_rotate(node);
+    if(_balance_factor(node) > 1) {
+        if(_get_height(node->left) > _get_height(node->right)) {
+            node = _right_rotate(node);
         }
         else {
-            node->left = left_rotate(node->left);
-            node = right_rotate(node);
+            node->left = _left_rotate(node->left);
+            node = _right_rotate(node);
         }
     }
-    if(balance_factor(node) < -1) {
-        if (get_height(node->left) < get_height(node->right))
-            node = left_rotate(node);
+    if(_balance_factor(node) < -1) {
+        if (_get_height(node->left) < _get_height(node->right))
+            node = _left_rotate(node);
         else {
-            node->right = right_rotate(node->right);
-            node = left_rotate(node);
+            node->right = _right_rotate(node->right);
+            node = _left_rotate(node);
         }
     }
 
@@ -145,21 +145,21 @@ typename AVLTree_MultiMap<T1, T2>::Node* AVLTree_MultiMap<T1, T2>::insert(AVLTre
 }
 
 template <typename T1, typename T2>
-int AVLTree_MultiMap<T1, T2>::get_height(const AVLTree_MultiMap::Node* node) {
+int AVLTree_MultiMap<T1, T2>::_get_height(const AVLTree_MultiMap::Node* node) {
     if(not node)
         return 0;
     return node->height;
 }
 
 template <typename T1, typename T2>
-int AVLTree_MultiMap<T1, T2>::balance_factor(const AVLTree_MultiMap::Node* node) {
+int AVLTree_MultiMap<T1, T2>::_balance_factor(const AVLTree_MultiMap::Node* node) {
     int left_height = (node->left)? node->left->height: 0;
     int right_height = (node->right)? node->right->height: 0;
     return left_height-right_height;
 }
 
 template <typename T1, typename T2>
-typename AVLTree_MultiMap<T1, T2>::Node* AVLTree_MultiMap<T1, T2>::right_rotate(AVLTree_MultiMap::Node* node) {
+typename AVLTree_MultiMap<T1, T2>::Node* AVLTree_MultiMap<T1, T2>::_right_rotate(AVLTree_MultiMap::Node* node) {
     auto long_branch = node->left;
     auto parent = node->parent;
 
@@ -173,14 +173,14 @@ typename AVLTree_MultiMap<T1, T2>::Node* AVLTree_MultiMap<T1, T2>::right_rotate(
     if(node->left)
         node->left->parent = node;
 
-    node->height = 1 + std::max(get_height(node->left), get_height(node->right));
-    long_branch->height = 1 + std::max(get_height(long_branch->left), get_height(long_branch->right));
+    node->height = 1 + std::max(_get_height(node->left), _get_height(node->right));
+    long_branch->height = 1 + std::max(_get_height(long_branch->left), _get_height(long_branch->right));
 
     return long_branch;
 }
 
 template <typename T1, typename T2>
-typename AVLTree_MultiMap<T1, T2>::Node* AVLTree_MultiMap<T1, T2>::left_rotate(AVLTree_MultiMap::Node* node) {
+typename AVLTree_MultiMap<T1, T2>::Node* AVLTree_MultiMap<T1, T2>::_left_rotate(AVLTree_MultiMap::Node* node) {
     auto long_branch = node->right;
     auto parent = node->parent;
 
@@ -194,8 +194,8 @@ typename AVLTree_MultiMap<T1, T2>::Node* AVLTree_MultiMap<T1, T2>::left_rotate(A
     if(node->right)
         node->right->parent = node;
 
-    node->height = 1 + std::max(get_height(node->left), get_height(node->right));
-    long_branch->height = 1 + std::max(get_height(long_branch->left), get_height(long_branch->right));
+    node->height = 1 + std::max(_get_height(node->left), _get_height(node->right));
+    long_branch->height = 1 + std::max(_get_height(long_branch->left), _get_height(long_branch->right));
 
     return long_branch;
 }
